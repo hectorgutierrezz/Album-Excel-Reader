@@ -1,0 +1,15 @@
+# Part of ubuntu-unity-settings
+
+[org.gnome.desktop.wm.preferences]
+theme = "Yaru-dark"
+
+[org.gnome.desktop.interface:Unity]
+gtk-theme = "Yaru-dark"
+icon-theme = "Yaru-purple-dark"
+cursor-theme = "Yaru"
+
+[com.canonical.unity-greeter]
+draw-grid = false
+theme-name = "Yaru-dark"
+icon-theme-name = "Yaru-purple-dark"
+logo = "/usr/share/ubuntu-unity/logos/unity-greeter-logo.png"

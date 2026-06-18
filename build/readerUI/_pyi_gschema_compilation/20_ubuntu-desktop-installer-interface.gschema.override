@@ -1,0 +1,3 @@
+[org.gnome.desktop.interface:ubuntu]
+text-scaling-factor=1.0
+toolkit-accessibility=false

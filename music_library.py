@@ -1,5 +1,7 @@
 import datetime
+import os
 import re
+import sys
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 import openpyxl
@@ -127,7 +129,18 @@ def parse_rating_criteria(criteria: Union[str, float, int, dict]) -> dict:
 class MusicLibrary:
     """Backend engine for loading, parsing, and filtering the Excel music sheet."""
     def __init__(self, excel_path: str = "Albums List.xlsx"):
-        self.excel_path = excel_path
+        # Resolve absolute path relative to executable/script directory if path is relative
+        if not os.path.isabs(excel_path):
+            if getattr(sys, 'frozen', False):
+                # Running as a compiled PyInstaller executable
+                base_dir = os.path.dirname(sys.executable)
+            else:
+                # Running as normal script
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+            self.excel_path = os.path.join(base_dir, excel_path)
+        else:
+            self.excel_path = excel_path
+
         self.records: List[Record] = []
         self.load()
 
