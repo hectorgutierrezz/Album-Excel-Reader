@@ -72,6 +72,58 @@ def parse_type(val) -> str:
         return "Unknown"
     return str(val).strip()
 
+def parse_rating_criteria(criteria: Union[str, float, int, dict]) -> dict:
+    """
+    Parses a rating criteria (e.g., '>=8.5', '<=6', '8', 9.5) into a standard dictionary:
+    {'val': float, 'op': str, 'truncate': bool}
+    """
+    if isinstance(criteria, dict):
+        return {
+            'val': float(criteria.get('val', 0.0)),
+            'op': str(criteria.get('op', '>=')),
+            'truncate': bool(criteria.get('truncate', False))
+        }
+    if isinstance(criteria, (int, float)):
+        val = float(criteria)
+        if val.is_integer():
+            return {'val': val, 'op': '==', 'truncate': True}
+        else:
+            return {'val': val, 'op': '>=', 'truncate': False}
+
+    criteria_str = str(criteria).strip()
+    if not criteria_str:
+        return {'val': 0.0, 'op': '>=', 'truncate': False}
+
+    if criteria_str.startswith(">="):
+        try:
+            val = float(criteria_str[2:].strip())
+            return {'val': val, 'op': '>=', 'truncate': False}
+        except ValueError:
+            pass
+    elif criteria_str.startswith("<="):
+        try:
+            val = float(criteria_str[2:].strip())
+            return {'val': val, 'op': '<=', 'truncate': False}
+        except ValueError:
+            pass
+    elif criteria_str.startswith("=="):
+        try:
+            val = float(criteria_str[2:].strip())
+            return {'val': val, 'op': '==', 'truncate': False}
+        except ValueError:
+            pass
+    else:
+        try:
+            val = float(criteria_str)
+            if val.is_integer():
+                return {'val': val, 'op': '==', 'truncate': True}
+            else:
+                return {'val': val, 'op': '>=', 'truncate': False}
+        except ValueError:
+            pass
+
+    return {'val': 0.0, 'op': '>=', 'truncate': False}
+
 class MusicLibrary:
     """Backend engine for loading, parsing, and filtering the Excel music sheet."""
     def __init__(self, excel_path: str = "Albums List.xlsx"):
@@ -163,75 +215,139 @@ class MusicLibrary:
 
     # --- Search and Filtering APIs ---
 
-    def search_by_title(self, title: str, exact: bool = False) -> List[Record]:
+    def search_by_title(self, title: str, exact: bool = False, records_list: Optional[List[Record]] = None) -> List[Record]:
         """Searches records by title (case-insensitive, substring by default)."""
+        target = records_list if records_list is not None else self.records
         query = title.strip().lower()
         if not query:
-            return self.records
+            return target
         if exact:
-            return [r for r in self.records if r.title.lower() == query]
-        return [r for r in self.records if query in r.title.lower()]
+            return [r for r in target if r.title.lower() == query]
+        return [r for r in target if query in r.title.lower()]
 
-    def search_by_artist(self, artist: str, exact: bool = False) -> List[Record]:
+    def search_by_artist(self, artist: str, exact: bool = False, records_list: Optional[List[Record]] = None) -> List[Record]:
         """Searches records by creator/artist/band (case-insensitive, substring by default)."""
+        target = records_list if records_list is not None else self.records
         query = artist.strip().lower()
         if not query:
-            return self.records
+            return target
         if exact:
-            return [r for r in self.records if r.creator.lower() == query]
-        return [r for r in self.records if query in r.creator.lower()]
+            return [r for r in target if r.creator.lower() == query]
+        return [r for r in target if query in r.creator.lower()]
 
-    def filter_by_year(self, year_range: Union[int, Tuple[int, int]]) -> List[Record]:
+    def filter_by_year(self, year_range: Union[int, Tuple[int, int]], records_list: Optional[List[Record]] = None) -> List[Record]:
         """Filters records by a single year or a range of years (inclusive)."""
+        target = records_list if records_list is not None else self.records
         if isinstance(year_range, int):
-            return [r for r in self.records if r.year == year_range]
+            return [r for r in target if r.year == year_range]
         elif isinstance(year_range, tuple) and len(year_range) == 2:
             start, end = year_range
-            return [r for r in self.records if start <= r.year <= end]
-        return self.records
+            return [r for r in target if start <= r.year <= end]
+        return target
 
-    def filter_by_genre(self, genre: str) -> List[Record]:
+    def filter_by_genre(self, genre: str, records_list: Optional[List[Record]] = None) -> List[Record]:
         """Filters records where any genre matches the query (case-insensitive)."""
+        target = records_list if records_list is not None else self.records
         query = genre.strip().lower()
         if not query:
-            return self.records
-        return [r for r in self.records if any(query in g.lower() for g in r.genres)]
+            return target
+        return [r for r in target if any(query in g.lower() for g in r.genres)]
 
-    def filter_by_rating(self, rating: float, op: str = ">=", truncate: bool = False) -> List[Record]:
+    def filter_by_rating(self, rating: float, op: str = ">=", truncate: bool = False, records_list: Optional[List[Record]] = None) -> List[Record]:
         """
         Filters records by rating. 
         op can be ">=", "<=", or "==".
         If truncate is True, truncates the database rating to match the integer rating.
         """
+        target = records_list if records_list is not None else self.records
         if truncate:
-            target = int(rating)
+            val_limit = int(rating)
             if op == "<=":
-                return [r for r in self.records if int(r.rating) <= target]
+                return [r for r in target if int(r.rating) <= val_limit]
             elif op == "==":
-                return [r for r in self.records if int(r.rating) == target]
+                return [r for r in target if int(r.rating) == val_limit]
             else:
-                return [r for r in self.records if int(r.rating) >= target]
+                return [r for r in target if int(r.rating) >= val_limit]
 
         if op == "<=":
-            return [r for r in self.records if r.rating <= rating]
+            return [r for r in target if r.rating <= rating]
         elif op == "==":
-            return [r for r in self.records if r.rating == rating]
+            return [r for r in target if r.rating == rating]
         else:
-            return [r for r in self.records if r.rating >= rating]
+            return [r for r in target if r.rating >= rating]
 
-    def filter_by_language(self, language: str) -> List[Record]:
+    def filter_by_language(self, language: str, records_list: Optional[List[Record]] = None) -> List[Record]:
         """Filters records by main language (case-insensitive)."""
+        target = records_list if records_list is not None else self.records
         query = language.strip().lower()
         if not query:
-            return self.records
-        return [r for r in self.records if r.language.lower() == query]
+            return target
+        return [r for r in target if r.language.lower() == query]
 
-    def filter_by_type(self, type_name: str) -> List[Record]:
+    def filter_by_type(self, type_name: str, records_list: Optional[List[Record]] = None) -> List[Record]:
         """Filters records by type (case-insensitive, e.g., 'Album', 'EP')."""
+        target = records_list if records_list is not None else self.records
         query = type_name.strip().lower()
         if not query:
-            return self.records
-        return [r for r in self.records if r.record_type.lower() == query]
+            return target
+        return [r for r in target if r.record_type.lower() == query]
+
+    def apply_filters(self, filters: dict, records_list: Optional[List[Record]] = None) -> List[Record]:
+        """
+        Applies multiple filters at once.
+        `filters` is a dictionary where keys map to filter parameters:
+        - 'artist': str (artist/band name)
+        - 'artist_exact': bool (default False)
+        - 'title': str (album title)
+        - 'title_exact': bool (default False)
+        - 'year': int or Tuple[int, int]
+        - 'genre': str
+        - 'rating': float, int, str, or dict/tuple criteria.
+        - 'language': str
+        - 'type': str
+        """
+        current_records = records_list if records_list is not None else self.records
+        
+        if not filters:
+            return current_records
+
+        # 1. Artist
+        if 'artist' in filters and filters['artist']:
+            exact = filters.get('artist_exact', False)
+            current_records = self.search_by_artist(filters['artist'], exact=exact, records_list=current_records)
+            
+        # 2. Title
+        if 'title' in filters and filters['title']:
+            exact = filters.get('title_exact', False)
+            current_records = self.search_by_title(filters['title'], exact=exact, records_list=current_records)
+            
+        # 3. Year
+        if 'year' in filters and filters['year'] is not None and filters['year'] != '':
+            current_records = self.filter_by_year(filters['year'], records_list=current_records)
+            
+        # 4. Genre
+        if 'genre' in filters and filters['genre']:
+            current_records = self.filter_by_genre(filters['genre'], records_list=current_records)
+            
+        # 5. Rating
+        if 'rating' in filters and filters['rating'] is not None and filters['rating'] != '':
+            rating_crit = parse_rating_criteria(filters['rating'])
+            current_records = self.filter_by_rating(
+                rating=rating_crit['val'],
+                op=rating_crit['op'],
+                truncate=rating_crit['truncate'],
+                records_list=current_records
+            )
+            
+        # 6. Language
+        if 'language' in filters and filters['language']:
+            current_records = self.filter_by_language(filters['language'], records_list=current_records)
+            
+        # 7. Type
+        if 'type' in filters and filters['type']:
+            current_records = self.filter_by_type(filters['type'], records_list=current_records)
+            
+        return current_records
 
     def to_dataframe(self, records_list: Optional[List[Record]] = None) -> pd.DataFrame:
         """Helper to convert a list of Records back to a clean pandas DataFrame for presentation."""

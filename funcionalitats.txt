@@ -1,6 +1,0 @@
-Search:
-	-Por nombre de album
-	-Por Banda
-	-En un año (o intervalo de años?)
-	-Por nota (integer y truncar la nota del excel)
-	-Por nombre de genero
