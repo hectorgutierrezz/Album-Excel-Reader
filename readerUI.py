@@ -35,9 +35,11 @@ class MusicLibraryApp(ctk.CTk):
 
         # Window settings
         self.title("🎵 Music Library Browser")
-        self.geometry("1100x700")
-        self.minimum_size = (900, 600)
-        self.minsize(900, 600)
+        self.geometry("1700x1000")
+        self.text_font_size = 12
+        self.filter_font_size = 24
+        self.genre_popup = None
+        self.language_popup = None
 
         # Main Layout: 2 Columns (Sidebar & Main Content)
         self.grid_columnconfigure(0, weight=0)  # Sidebar fixed width
@@ -45,7 +47,7 @@ class MusicLibraryApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)     # Both expand vertically
 
         # --- Sidebar Frame ---
-        self.sidebar_frame = ctk.CTkFrame(self, width=280, corner_radius=0)
+        self.sidebar_frame = ctk.CTkFrame(self, width=480, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(0, weight=1)  # Content frame expands
         self.sidebar_frame.grid_rowconfigure(1, weight=0)  # Theme selection stays bottom
@@ -70,14 +72,18 @@ class MusicLibraryApp(ctk.CTk):
         # 3. Genre
         self.genre_label = ctk.CTkLabel(self.scroll_filters, text="Genre:", anchor="w")
         self.genre_label.grid(row=4, column=0, padx=10, pady=(10, 0), sticky="w")
-        self.genre_entry = ctk.CTkEntry(self.scroll_filters, placeholder_text="e.g. Synth-pop")
-        self.genre_entry.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="ew")
+        unique_genres = sorted({genre for record in self.library.records for genre in record.genres if genre})
+        self.genre_options = ["Any"] + unique_genres
+        self.genre_button = ctk.CTkButton(self.scroll_filters, text="Any", anchor="w", command=self.open_genre_selector)
+        self.genre_button.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="ew")
 
         # 4. Language
         self.lang_label = ctk.CTkLabel(self.scroll_filters, text="Language:", anchor="w")
         self.lang_label.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="w")
-        self.lang_entry = ctk.CTkEntry(self.scroll_filters, placeholder_text="e.g. English")
-        self.lang_entry.grid(row=7, column=0, padx=10, pady=(0, 10), sticky="ew")
+        unique_languages = sorted({record.language for record in self.library.records if record.language})
+        self.lang_options = ["Any"] + unique_languages
+        self.lang_button = ctk.CTkButton(self.scroll_filters, text="Any", anchor="w", command=self.open_language_selector)
+        self.lang_button.grid(row=7, column=0, padx=10, pady=(0, 10), sticky="ew")
 
         # 5. Type (Dynamic OptionMenu)
         self.type_label = ctk.CTkLabel(self.scroll_filters, text="Record Type:", anchor="w")
@@ -147,6 +153,16 @@ class MusicLibraryApp(ctk.CTk):
         self.theme_menu = ctk.CTkOptionMenu(self.sidebar_frame, values=["System", "Dark", "Light"], command=self.change_theme_mode)
         self.theme_menu.grid(row=3, column=0, padx=20, pady=(0, 20), sticky="ew")
 
+        self.filter_widgets = [
+            self.artist_label, self.artist_entry, self.title_label, self.title_entry,
+            self.genre_label, self.genre_button, self.lang_label, self.lang_button,
+            self.type_label, self.type_optionmenu, self.year_label, self.start_year_entry,
+            self.end_year_entry, self.rating_label, self.rating_op_menu, self.rating_val_label,
+            self.apply_btn, self.clear_btn, self.theme_label, self.theme_menu
+        ]
+        for widget in self.filter_widgets:
+            widget.configure(font=ctk.CTkFont(size=self.filter_font_size))
+
         # --- Main Content Frame ---
         self.main_content = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.main_content.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
@@ -161,13 +177,22 @@ class MusicLibraryApp(ctk.CTk):
         self.result_stats_label = ctk.CTkLabel(self.info_frame, text="Loading library records...", font=ctk.CTkFont(size=14, weight="bold"))
         self.result_stats_label.grid(row=0, column=0, padx=15, pady=10, sticky="w")
 
+        self.zoom_out_btn = ctk.CTkButton(self.info_frame, text="-", width=32, command=lambda: self.change_text_size(-1))
+        self.zoom_out_btn.grid(row=0, column=1, padx=(5, 0), pady=8)
+        self.zoom_in_btn = ctk.CTkButton(self.info_frame, text="+", width=32, command=lambda: self.change_text_size(1))
+        self.zoom_in_btn.grid(row=0, column=2, padx=(0, 10), pady=8)
+
         # Results monospaced text display
         # We use a CTkTextbox and configure a clean monospaced font
         self.results_display = ctk.CTkTextbox(self.main_content, wrap="none")
         self.results_display.grid(row=1, column=0, sticky="nsew")
         
         # Configure monospaced font (fallback hierarchy)
-        self.results_display.configure(font=("Courier New", 12) if sys.platform == "win32" else ("DejaVu Sans Mono", 12))
+        self.text_font_family = "Courier New" if sys.platform == "win32" else "DejaVu Sans Mono"
+        self.results_display.configure(font=(self.text_font_family, self.text_font_size))
+        self.results_textbox = self.results_display._textbox
+        self.results_textbox.tag_configure("selected_row", background="#2f6f9f", foreground="white")
+        self.results_textbox.bind("<Button-1>", self.select_result_row)
 
         # Initial data update
         self.update_results()
@@ -181,12 +206,70 @@ class MusicLibraryApp(ctk.CTk):
     def change_theme_mode(self, mode):
         ctk.set_appearance_mode(mode)
 
+    def change_text_size(self, change):
+        self.text_font_size = max(8, min(32, self.text_font_size + change))
+        self.results_display.configure(font=(self.text_font_family, self.text_font_size))
+
+    def open_genre_selector(self):
+        self.open_selector("Genre", self.genre_options, "genre_popup", self.select_genre)
+
+    def open_language_selector(self):
+        self.open_selector("Language", self.lang_options, "language_popup", self.select_language)
+
+    def open_selector(self, title, options, popup_attribute, select_command):
+        popup = getattr(self, popup_attribute)
+        if popup is not None and popup.winfo_exists():
+            popup.focus()
+            return
+
+        popup = ctk.CTkToplevel(self)
+        setattr(self, popup_attribute, popup)
+        popup.title(f"Select {title}")
+        popup.geometry("380x520")
+        popup.resizable(False, False)
+        popup.transient(self)
+        popup.grid_columnconfigure(0, weight=1)
+        popup.grid_rowconfigure(0, weight=1)
+
+        option_list = ctk.CTkScrollableFrame(popup, label_text=f"{title}s")
+        option_list.grid(row=0, column=0, padx=12, pady=12, sticky="nsew")
+        option_list.grid_columnconfigure(0, weight=1)
+
+        for option in options:
+            option_button = ctk.CTkButton(
+                option_list,
+                text=option,
+                anchor="w",
+                font=ctk.CTkFont(size=self.filter_font_size),
+                command=lambda value=option: select_command(value)
+            )
+            option_button.grid(row=option_list.grid_size()[1], column=0, padx=6, pady=3, sticky="ew")
+
+    def select_genre(self, genre):
+        self.genre_button.configure(text=genre)
+        if self.genre_popup is not None and self.genre_popup.winfo_exists():
+            self.genre_popup.destroy()
+        self.genre_popup = None
+
+    def select_language(self, language):
+        self.lang_button.configure(text=language)
+        if self.language_popup is not None and self.language_popup.winfo_exists():
+            self.language_popup.destroy()
+        self.language_popup = None
+
+    def select_result_row(self, event):
+        line_number = int(self.results_textbox.index(f"@{event.x},{event.y}").split(".")[0])
+        if line_number < 3:
+            return
+        self.results_textbox.tag_remove("selected_row", "1.0", "end")
+        self.results_textbox.tag_add("selected_row", f"{line_number}.0", f"{line_number}.end+1c")
+
     def clear_all_filters(self):
         # Reset text entries
         self.artist_entry.delete(0, "end")
         self.title_entry.delete(0, "end")
-        self.genre_entry.delete(0, "end")
-        self.lang_entry.delete(0, "end")
+        self.genre_button.configure(text="Any")
+        self.lang_button.configure(text="Any")
         
         # Reset options
         self.type_optionmenu.set("Any")
@@ -207,14 +290,14 @@ class MusicLibraryApp(ctk.CTk):
         # 1. Text Filters
         artist = self.artist_entry.get().strip()
         title = self.title_entry.get().strip()
-        genre = self.genre_entry.get().strip()
-        lang = self.lang_entry.get().strip()
+        genre = self.genre_button.cget("text")
+        lang = self.lang_button.cget("text")
         rec_type = self.type_optionmenu.get()
 
         if artist: filters['artist'] = artist
         if title: filters['title'] = title
-        if genre: filters['genre'] = genre
-        if lang: filters['language'] = lang
+        if genre != "Any": filters['genre'] = genre
+        if lang != "Any": filters['language'] = lang
         if rec_type != "Any": filters['type'] = rec_type
 
         # 2. Year Range
@@ -258,6 +341,7 @@ class MusicLibraryApp(ctk.CTk):
         # Update main text area
         self.results_display.configure(state="normal")
         self.results_display.delete("1.0", "end")
+        self.results_textbox.tag_remove("selected_row", "1.0", "end")
         
         if len(results) == 0:
             self.results_display.insert("1.0", "\n\n   No records found matching current active filters.")
