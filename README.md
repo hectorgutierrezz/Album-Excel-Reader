@@ -23,15 +23,6 @@ Puedes usar la aplicación directamente desde cualquier navegador web moderno:
   ```
   Luego abre `http://localhost:8080` en tu navegador.
 
-#### ¿Cómo cargar tu archivo Excel en la Web?
-1. En la barra lateral izquierda, verás la casilla **Drop Albums List.xlsx or Browse**.
-2. **Arrastra y suelta** tu archivo de Excel o pulsa en **Browse** para seleccionarlo desde tu equipo.
-3. El archivo se cargará de inmediato y verás el número total de álbumes disponibles.
-4. **Privacidad garantizada**: Todo el procesamiento se realiza **100% en tu navegador**. El archivo nunca se sube a internet ni a ningún servidor externo. Además, la web guarda tu sesión en la memoria local de tu navegador (`IndexedDB`) para que no tengas que volver a cargarlo cada vez que recargues la página.
-5. Si actualizas tu Excel con nueva música, pulsa el botón **Change** en la barra lateral y carga la nueva versión.
-
----
-
 ### Opción 2: Aplicación de Escritorio con Interfaz Gráfica (GUI)
 
 #### A) Con el ejecutable listo para usar (sin necesidad de tener Python instalado)
@@ -108,17 +99,6 @@ La aplicación detecta automáticamente las siguientes columnas en la primera fi
 ---
 
 ## 🛠️ Para Desarrolladores y Compilación
-
-### Publicar en GitHub Pages
-1. Sube tu código al repositorio en GitHub:
-   ```bash
-   git add .
-   git commit -m "Actualizar sitio web"
-   git push origin main
-   ```
-2. En GitHub ve a **Settings** > **Pages**.
-3. En **Build and deployment** > **Source**, selecciona **Deploy from a branch**.
-4. En **Branch**, escoge `main` y carpeta `/ (root)`, luego pulsa **Save**.
 
 ### Compilar ejecutables con PyInstaller
 
