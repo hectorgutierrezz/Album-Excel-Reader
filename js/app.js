@@ -534,7 +534,9 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadLibrary() {
     elements.statsText.textContent = 'Loading library...';
     try {
-      const resp = await fetch(encodeURI('Albums List.xlsx'));
+      const resp = await fetch(encodeURI('Albums List.xlsx') + '?t=' + Date.now(), {
+        cache: 'no-cache'
+      });
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}: Could not fetch Albums List.xlsx`);
       }

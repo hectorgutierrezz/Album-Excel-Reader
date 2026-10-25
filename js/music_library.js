@@ -122,11 +122,12 @@ class MusicLibraryJS {
   }
 
   loadFromArrayBuffer(arrayBuffer, fileName = 'Albums List.xlsx') {
-    if (!window.XLSX) {
+    const xlsxLib = (typeof XLSX !== 'undefined') ? XLSX : (typeof window !== 'undefined' ? window.XLSX : null);
+    if (!xlsxLib) {
       throw new Error('SheetJS (XLSX) library is not loaded');
     }
 
-    const workbook = window.XLSX.read(arrayBuffer, {
+    const workbook = xlsxLib.read(arrayBuffer, {
       type: 'array',
       cellDates: true,
       raw: true
@@ -138,7 +139,7 @@ class MusicLibraryJS {
 
     const firstSheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[firstSheetName];
-    const rows = window.XLSX.utils.sheet_to_json(sheet, {
+    const rows = xlsxLib.utils.sheet_to_json(sheet, {
       header: 1,
       raw: false,
       defval: null
