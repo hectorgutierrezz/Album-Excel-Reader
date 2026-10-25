@@ -1,9 +1,0 @@
-[org.gnome.desktop.a11y.applications:ubuntu]
-screen-magnifier-enabled=false
-screen-reader-enabled=false
-
-[org.gnome.desktop.a11y.interface:ubuntu]
-high-contrast=true
-
-[org.gnome.desktop.a11y.keyboard:ubuntu]
-mousekeys-enable=true
