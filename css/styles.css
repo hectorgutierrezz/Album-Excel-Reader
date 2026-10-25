@@ -105,7 +105,7 @@ html, body {
 }
 
 /* ==========================================================================
-   Sidebar (Left Column, matches 480px width from readerUI.py)
+   Sidebar (Left Column)
    ========================================================================== */
 .sidebar {
   width: 440px;
@@ -544,7 +544,7 @@ html, body {
   padding: 16px 24px;
 }
 
-/* Monospace View (Faithful 1:1 reproduction of readerUI.py) */
+/* Monospace View */
 .monospace-view {
   font-family: var(--font-mono);
   font-size: var(--font-size-table);
@@ -698,7 +698,7 @@ html, body {
 }
 
 /* ==========================================================================
-   Modals (Genre & Language Selectors matching readerUI popup)
+   Modals (Genre & Language Selectors)
    ========================================================================== */
 .modal-backdrop {
   position: fixed;

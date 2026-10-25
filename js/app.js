@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="empty-state">
           <div class="empty-state-icon">💿</div>
           <h3>Loading albums...</h3>
-          <p>Please wait while the music library is loaded from Albums List.xlsx</p>
+            <p>Please wait while the music library is loaded from Google Drive</p>
         </div>
       `;
       elements.tableBody.innerHTML = '';
@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 1. Monospace DataFrame View (Replicating readerUI.py CTkTextbox)
+  // 1. Monospace DataFrame View
   function renderMonospaceView() {
     const lines = state.library.toDataFrameString(state.currentRecords);
     if (!Array.isArray(lines) || lines.length === 0) return;
@@ -530,33 +530,90 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- Automatic Library Loading from Albums List.xlsx ---
+  // --- Library loading (Google Drive via Apps Script proxy, or local Excel) ---
+
+  function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  async function fetchFromDriveProxy(proxyUrl) {
+    const url = proxyUrl + (proxyUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+    const resp = await fetch(url, { cache: 'no-cache', redirect: 'follow' });
+    if (!resp.ok) {
+      throw new Error(`Drive proxy HTTP ${resp.status}`);
+    }
+    const payload = await resp.json();
+    if (!payload || !payload.ok || !payload.data) {
+      throw new Error((payload && payload.error) || 'Drive proxy returned an invalid response');
+    }
+    return {
+      buffer: base64ToArrayBuffer(payload.data),
+      fileName: payload.name || 'Albums List.xlsx',
+      source: 'Google Drive'
+    };
+  }
+
+  async function fetchLocalExcel(path) {
+    const resp = await fetch(encodeURI(path) + '?t=' + Date.now(), { cache: 'no-cache' });
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: Could not fetch ${path}`);
+    }
+    return {
+      buffer: await resp.arrayBuffer(),
+      fileName: path,
+      source: 'local file'
+    };
+  }
+
+  function showLoadError(err) {
+    console.error('Error loading library:', err);
+    elements.statsText.textContent = 'Error loading library';
+    const cfg = window.APP_CONFIG || {};
+    const hint = cfg.driveProxyUrl
+      ? 'Check <code>js/config.js</code> (driveProxyUrl) and that the Apps Script deployment is active.'
+      : 'Set <code>driveProxyUrl</code> in <code>js/config.js</code> (see README), or serve a local <code>Albums List.xlsx</code>.';
+    elements.monoDisplay.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <h3>Could not load album library</h3>
+        <p>${err.message}</p>
+        <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">${hint}</p>
+      </div>
+    `;
+  }
+
   async function loadLibrary() {
     elements.statsText.textContent = 'Loading library...';
+    const cfg = window.APP_CONFIG || {};
+    const proxyUrl = (cfg.driveProxyUrl || '').trim();
+    const localPath = cfg.localExcelPath || 'Albums List.xlsx';
+
     try {
-      const resp = await fetch(encodeURI('Albums List.xlsx') + '?t=' + Date.now(), {
-        cache: 'no-cache'
-      });
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}: Could not fetch Albums List.xlsx`);
+      let loaded;
+      if (proxyUrl) {
+        elements.statsText.textContent = 'Downloading from Google Drive...';
+        try {
+          loaded = await fetchFromDriveProxy(proxyUrl);
+        } catch (driveErr) {
+          console.warn('Drive proxy failed, trying local fallback:', driveErr);
+          elements.statsText.textContent = 'Drive unavailable — trying local file...';
+          loaded = await fetchLocalExcel(localPath);
+        }
+      } else {
+        loaded = await fetchLocalExcel(localPath);
       }
-      const buffer = await resp.arrayBuffer();
-      state.library.loadFromArrayBuffer(buffer, 'Albums List.xlsx');
+
+      state.library.loadFromArrayBuffer(loaded.buffer, loaded.fileName);
       populateFilterOptions();
       clearAllFilters();
+      console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
     } catch (err) {
-      console.error('Error loading library:', err);
-      elements.statsText.textContent = 'Error loading library';
-      elements.monoDisplay.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">⚠️</div>
-          <h3>Could not load Albums List.xlsx</h3>
-          <p>${err.message}</p>
-          <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
-            Please serve this site with a local server (e.g. <code>python3 -m http.server</code>) or visit via GitHub Pages.
-          </p>
-        </div>
-      `;
+      showLoadError(err);
     }
   }
 

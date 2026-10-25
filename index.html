@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🎵 Music Library Browser</title>
   <meta name="description"
-    content="Check, search, and filter your personal album Excel spreadsheet with multi-artist support, interactive views, and offline in-browser processing.">
+    content="Search and filter your personal album Excel from Google Drive — multi-artist support and interactive views in the browser.">
 
   <!-- Modern Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,14 +15,12 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=1.2">
+  <link rel="stylesheet" href="css/styles.css?v=1.3">
 </head>
 
 <body>
   <div class="app-layout">
-    <!-- ============================================================
-         Sidebar Filters Column (mirrors readerUI.py)
-         ============================================================ -->
+    <!-- Sidebar Filters -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
@@ -150,7 +148,7 @@
         <div class="header-controls">
           <!-- View Mode Toggle -->
           <div class="view-mode-toggle" title="Switch Display Style">
-            <button type="button" class="view-btn active" id="btn-view-mono">DataFrame (App)</button>
+            <button type="button" class="view-btn active" id="btn-view-mono">DataFrame</button>
             <button type="button" class="view-btn" id="btn-view-table">Data Table (Web)</button>
           </div>
 
@@ -164,12 +162,12 @@
 
       <!-- Main Results Display -->
       <section class="results-container" id="results-container">
-        <!-- Monospace DataFrame Display (1:1 with readerUI.py CTkTextbox) -->
+        <!-- Monospace DataFrame Display -->
         <div class="monospace-view" id="mono-display">
           <div class="empty-state" id="empty-state">
             <div class="empty-state-icon">💿</div>
             <h3>Loading albums...</h3>
-            <p>Please wait while the music library is loaded from Albums List.xlsx</p>
+            <p>Please wait while the music library is loaded from Google Drive</p>
           </div>
         </div>
 
@@ -239,10 +237,10 @@
     </div>
   </div>
 
-  <!-- Application Scripts -->
   <script src="vendor/xlsx.full.min.js"></script>
-  <script src="js/music_library.js?v=1.2"></script>
-  <script src="js/app.js?v=1.2"></script>
+  <script src="js/config.js?v=1.3"></script>
+  <script src="js/music_library.js?v=1.3"></script>
+  <script src="js/app.js?v=1.3"></script>
 </body>
 
 </html>

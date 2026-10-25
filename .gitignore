@@ -1,40 +1,14 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# PyInstaller binaries
-readerUI
-*.exe
-*.spec.bak
-
-# IDE & OS
+# Local / IDE
 .DS_Store
 Thumbs.db
 .idea/
+.vscode/
+.ruby-lsp/
+.venv/
+venv/
+env/
 
-# Local personal spreadsheets (uncomment if you wish to prevent committing personal Excel files)
+# Optional: keep personal Excel out of git
 # Albums List.xlsx
 # *.xlsx
 # *.xls

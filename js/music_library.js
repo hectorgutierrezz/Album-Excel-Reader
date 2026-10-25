@@ -1,7 +1,7 @@
 /**
  * MusicLibraryJS - Client-side engine for reading, parsing, and filtering
  * album excel spreadsheets in browser environments (GitHub Pages).
- * Replicates the exact logic of music_library.py with multi-artist support.
+ * In-browser music library: Excel parsing and multi-artist filter logic.
  */
 
 class Record {
@@ -409,7 +409,7 @@ class MusicLibraryJS {
 
   /**
    * Generates a monospaced DataFrame string replicating pandas df.to_string(index=True)
-   * exactly as displayed in the readerUI python application.
+   * in monospace DataFrame view.
    */
   toDataFrameString(recordsList = null) {
     const target = recordsList !== null ? recordsList : this.records;
@@ -417,7 +417,7 @@ class MusicLibraryJS {
       return '\n\n   No records found matching current active filters.';
     }
 
-    // Max column width in pandas readerUI is set to 22
+    // Max column width for monospace view
     const maxColWidth = 22;
     const truncate = (val, maxLen = maxColWidth) => {
       const s = String(val === null || val === undefined ? '' : val);
