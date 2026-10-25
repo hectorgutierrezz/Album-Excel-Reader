@@ -154,15 +154,25 @@ class MusicLibraryJS {
       defval: null
     });
 
+    this.loadFromRows(rows, fileName);
+  }
+
+  /**
+   * Load from a 2D array (header row + data). Used by the Drive Apps Script proxy.
+   * @param {Array<Array<*>>} rows
+   * @param {string} fileName
+   */
+  loadFromRows(rows, fileName = 'Albums List') {
     if (!rows || rows.length < 2) {
       this.records = [];
       this.fileName = fileName;
+      this.minYear = 1900;
+      this.maxYear = 2026;
       return;
     }
 
     const header = (rows[0] || []).map(cell => (cell !== null && cell !== undefined ? String(cell).trim() : ''));
 
-    // Robust column mapping with duplicate header protection
     const colMap = {
       records: -1,
       creator: -1,
@@ -194,7 +204,6 @@ class MusicLibraryJS {
       }
     });
 
-    // Fallbacks
     const idxRecords = colMap.records !== -1 ? colMap.records : 0;
     const idxCreator = colMap.creator !== -1 ? colMap.creator : 1;
     const idxType = colMap.type !== -1 ? colMap.type : 2;
@@ -221,7 +230,6 @@ class MusicLibraryJS {
       const genres = MusicLibraryJS.parseGenres(idxGenres < row.length ? row[idxGenres] : '');
       const language = idxLang < row.length && row[idxLang] !== null ? String(row[idxLang]).trim() : '';
 
-      // Year parsing
       const rawYear = idxYear < row.length ? row[idxYear] : null;
       let year = 0;
       if (rawYear !== null && rawYear !== undefined) {
@@ -229,7 +237,6 @@ class MusicLibraryJS {
         if (!isNaN(parsedYear)) year = parsedYear;
       }
 
-      // Rating parsing
       const rawRating = idxMark < row.length ? row[idxMark] : null;
       const rating = MusicLibraryJS.parseRating(rawRating);
 
@@ -241,7 +248,7 @@ class MusicLibraryJS {
         language,
         year,
         rating,
-        originalRating: rawRating !== null ? String(rawRating) : null
+        originalRating: rawRating !== null && rawRating !== undefined ? String(rawRating) : null
       }));
     }
 

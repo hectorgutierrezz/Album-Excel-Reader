@@ -10,7 +10,7 @@ window.APP_CONFIG = {
    * URL of the deployed Apps Script web app (.../exec).
    * Leave empty to load the local "Albums List.xlsx" (useful for offline/dev).
    */
-  driveProxyUrl: 'https://script.google.com/macros/s/AKfycbwuK6NZXLq6dgWj9lpMx7e3p2UFH1vXxB9edNXM1B33ld9yzlkhzjIyRtfd2gqBeksY/exec',
+  driveProxyUrl: 'https://script.google.com/macros/s/AKfycbwt36nmu9uezVs75nJEGAw9h8vAbvpeqsVBIBLyCjVSHTk2zRYdRM8m38kxA0qF417a/exec',
 
   /** Local fallback when driveProxyUrl is empty or the proxy fails. */
   localExcelPath: 'Albums List.xlsx'

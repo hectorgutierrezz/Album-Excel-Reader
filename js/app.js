@@ -532,15 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Library loading (Google Drive via Apps Script proxy, or local Excel) ---
 
-  function base64ToArrayBuffer(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
   async function fetchFromDriveProxy(proxyUrl) {
     const url = proxyUrl + (proxyUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
     const resp = await fetch(url, { cache: 'no-cache', redirect: 'follow' });
@@ -548,12 +539,15 @@ document.addEventListener('DOMContentLoaded', () => {
       throw new Error(`Drive proxy HTTP ${resp.status}`);
     }
     const payload = await resp.json();
-    if (!payload || !payload.ok || !payload.data) {
+    if (!payload || !payload.ok) {
       throw new Error((payload && payload.error) || 'Drive proxy returned an invalid response');
     }
+    if (!payload.rows || !Array.isArray(payload.rows)) {
+      throw new Error('Drive proxy did not return sheet rows (update Code.gs and redeploy)');
+    }
     return {
-      buffer: base64ToArrayBuffer(payload.data),
-      fileName: payload.name || 'Albums List.xlsx',
+      rows: payload.rows,
+      fileName: payload.name || 'Albums List',
       source: 'Google Drive'
     };
   }
@@ -594,24 +588,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const localPath = cfg.localExcelPath || 'Albums List.xlsx';
 
     try {
-      let loaded;
       if (proxyUrl) {
         elements.statsText.textContent = 'Downloading from Google Drive...';
         try {
-          loaded = await fetchFromDriveProxy(proxyUrl);
+          const loaded = await fetchFromDriveProxy(proxyUrl);
+          state.library.loadFromRows(loaded.rows, loaded.fileName);
+          console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
         } catch (driveErr) {
           console.warn('Drive proxy failed, trying local fallback:', driveErr);
           elements.statsText.textContent = 'Drive unavailable — trying local file...';
-          loaded = await fetchLocalExcel(localPath);
+          const loaded = await fetchLocalExcel(localPath);
+          state.library.loadFromArrayBuffer(loaded.buffer, loaded.fileName);
+          console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
         }
       } else {
-        loaded = await fetchLocalExcel(localPath);
+        const loaded = await fetchLocalExcel(localPath);
+        state.library.loadFromArrayBuffer(loaded.buffer, loaded.fileName);
+        console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
       }
 
-      state.library.loadFromArrayBuffer(loaded.buffer, loaded.fileName);
       populateFilterOptions();
       clearAllFilters();
-      console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
     } catch (err) {
       showLoadError(err);
     }

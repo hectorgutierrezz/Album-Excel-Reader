@@ -21,11 +21,11 @@ Luego abre `http://localhost:8080`. Sin `driveProxyUrl`, carga el fichero local 
 
 ## Autoactualizar desde Google Drive
 
-Los navegadores no pueden leer Drive directamente (CORS). Hace falta un **proxy mínimo** con Google Apps Script que lee tu Excel privado y lo sirve a la web.
+Los navegadores no pueden leer Drive directamente (CORS). Hace falta un **proxy mínimo** con Google Apps Script que lee tu **Google Sheet** y la sirve como JSON.
 
-### 1. ID del fichero en Drive
-En Drive, abre el Excel. La URL es del estilo:
-`https://drive.google.com/file/d/FILE_ID/view`  
+### 1. ID de la hoja
+Abre la hoja en Drive/Sheets. La URL es del estilo:
+`https://docs.google.com/spreadsheets/d/FILE_ID/edit`  
 Copia el `FILE_ID`.
 
 ### 2. Crear el proxy (Apps Script)
@@ -35,7 +35,10 @@ Copia el `FILE_ID`.
 4. **Deploy** → **New deployment** → tipo **Web app**:
    - Execute as: **Me**
    - Who has access: **Anyone**
-5. Copia la URL que termina en `/exec`.
+5. Autoriza acceso a Sheets cuando lo pida.
+6. Copia la URL que termina en `/exec`.
+
+Si cambias el código después: **Implementar → Gestionar implementaciones → lápiz → Nueva versión → Implementar**.
 
 ### 3. Conectar la web
 En `js/config.js`:
@@ -44,7 +47,7 @@ driveProxyUrl: 'https://script.google.com/macros/s/XXXX/exec',
 ```
 Haz commit y push para que GitHub Pages lo use.
 
-A partir de ahí, cada visita descarga la versión actual del Excel en Drive. Si el proxy falla, la web intenta el `Albums List.xlsx` local como respaldo.
+Cada visita carga los datos actuales de la Sheet. Si el proxy falla, la web intenta el `Albums List.xlsx` local como respaldo.
 
 ---
 

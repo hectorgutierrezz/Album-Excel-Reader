@@ -1,26 +1,25 @@
 /**
- * Google Apps Script — Excel proxy for Music Library Browser
+ * Google Apps Script — sheet proxy for Music Library Browser
  *
  * Setup:
  * 1. Open https://script.google.com → New project
- * 2. Paste this entire file into Code.gs (replace the default content)
- * 3. Set DRIVE_FILE_ID below (from the Drive/Sheets URL)
+ * 2. Paste this entire file into Code.gs
+ * 3. Set DRIVE_FILE_ID (from the Sheets/Drive URL)
  * 4. Deploy → New deployment → Type: Web app
  *    - Execute as: Me
  *    - Who has access: Anyone
  * 5. Copy the Web app URL (.../exec) into js/config.js → driveProxyUrl
  *
- * Supports both native Google Sheets and uploaded .xlsx files.
- * After you edit the sheet on Drive, no redeploy is needed —
- * each page load fetches the current data.
+ * Uses SpreadsheetApp only (no UrlFetchApp) — works with Google Sheets.
+ * After you edit the sheet, no redeploy is needed.
  */
 
-/** @type {string} Google Drive / Sheets file ID of Albums List */
+/** @type {string} Google Sheets file ID of Albums List */
 var DRIVE_FILE_ID = 'PASTE_YOUR_DRIVE_FILE_ID_HERE';
 
 /**
- * Serves the spreadsheet as Excel (base64 JSON) for the static site.
- * @param {Object} e - Apps Script event (unused)
+ * Serves the first sheet as JSON rows for the static site.
+ * @param {Object} e - unused
  * @return {TextOutput}
  */
 function doGet(e) {
@@ -28,44 +27,19 @@ function doGet(e) {
     if (!DRIVE_FILE_ID || DRIVE_FILE_ID.indexOf('PASTE_') === 0) {
       return jsonResponse_({
         ok: false,
-        error: 'Set DRIVE_FILE_ID in Code.gs to your Google Drive Excel/Sheets file ID.'
+        error: 'Set DRIVE_FILE_ID in Code.gs to your Google Sheets file ID.'
       });
     }
 
-    var file = DriveApp.getFileById(DRIVE_FILE_ID);
-    var mime = file.getMimeType();
-    var blob;
-    var name = file.getName();
-
-    if (mime === MimeType.GOOGLE_SHEETS) {
-      // Native Sheets → export as real .xlsx (getBlob() would return PDF)
-      var exportUrl =
-        'https://docs.google.com/spreadsheets/d/' +
-        DRIVE_FILE_ID +
-        '/export?format=xlsx';
-      var token = ScriptApp.getOAuthToken();
-      var response = UrlFetchApp.fetch(exportUrl, {
-        headers: { Authorization: 'Bearer ' + token },
-        muteHttpExceptions: true
-      });
-      if (response.getResponseCode() !== 200) {
-        throw new Error(
-          'Sheets export failed (HTTP ' + response.getResponseCode() + '). ' +
-          'Re-authorize the web app after updating the script.'
-        );
-      }
-      blob = response.getBlob().setName(name + '.xlsx');
-      name = name + '.xlsx';
-    } else {
-      blob = file.getBlob();
-    }
+    var ss = SpreadsheetApp.openById(DRIVE_FILE_ID);
+    var sheet = ss.getSheets()[0];
+    var values = sheet.getDataRange().getDisplayValues();
 
     return jsonResponse_({
       ok: true,
-      name: name,
-      mimeType: blob.getContentType(),
-      modified: file.getLastUpdated().toISOString(),
-      data: Utilities.base64Encode(blob.getBytes())
+      format: 'rows',
+      name: ss.getName(),
+      rows: values
     });
   } catch (err) {
     return jsonResponse_({
