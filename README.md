@@ -94,7 +94,6 @@ La aplicación detecta automáticamente las siguientes columnas en la primera fi
 * **LANGUAGE**: Idioma principal de las canciones.
 * **YEAR**: Año de publicación (número entero de 4 dígitos).
 * **MARK(/10)** o **MARK**: Calificación numérica sobre 10 (admite decimales con punto o coma).
-* **WOKE?**: Indicador opcional (`Yeh` / `Nah`, `Yes` / `No`, `True` / `False`).
 
 ---
 

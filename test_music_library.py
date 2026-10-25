@@ -42,13 +42,13 @@ class TestMusicLibrary(unittest.TestCase):
 
     def test_multi_artist_search(self):
         rec1 = Record(title="An Evening With Silk Sonic", creator="Bruno Mars; Anderson .Paak", record_type="Album",
-                      genres=["R&B", "Soul"], language="English", year=2021, rating=9.0, woke=False)
+                      genres=["R&B", "Soul"], language="English", year=2021, rating=9.0)
         rec2 = Record(title="24K Magic", creator="Bruno Mars", record_type="Album",
-                      genres=["Pop", "Funk"], language="English", year=2016, rating=8.5, woke=False)
+                      genres=["Pop", "Funk"], language="English", year=2016, rating=8.5)
         rec3 = Record(title="Swimming", creator="Mac Miller", record_type="Album",
-                      genres=["Hip Hop"], language="English", year=2018, rating=8.0, woke=False)
+                      genres=["Hip Hop"], language="English", year=2018, rating=8.0)
         rec4 = Record(title="IGOR", creator="Tyler, The Creator", record_type="Album",
-                      genres=["Hip Hop"], language="English", year=2019, rating=9.5, woke=False)
+                      genres=["Hip Hop"], language="English", year=2019, rating=9.5)
 
         records = [rec1, rec2, rec3, rec4]
         lib = MusicLibrary.__new__(MusicLibrary)

@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🎵 Music Library Browser</title>
-  <meta name="description" content="Check, search, and filter your personal album Excel spreadsheet with multi-artist support, interactive views, and offline in-browser processing.">
-  
+  <meta name="description"
+    content="Check, search, and filter your personal album Excel spreadsheet with multi-artist support, interactive views, and offline in-browser processing.">
+
   <!-- Modern Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
   <div class="app-layout">
     <!-- ============================================================
@@ -55,7 +60,8 @@
             <span>Artist/Band:</span>
             <span class="filter-label-hint">multi-artist supported</span>
           </label>
-          <input type="text" id="artist-input" class="input-text" placeholder="e.g. Daft Punk, Bruno Mars..." autocomplete="off">
+          <input type="text" id="artist-input" class="input-text" placeholder="e.g. Daft Punk, Bruno Mars..."
+            autocomplete="off">
           <div class="artist-helper-bar">
             <span>Semicolon-separated artists (;) matched individually</span>
             <button type="button" class="btn-quick-artist" id="btn-open-artists-modal">Pick from list</button>
@@ -65,7 +71,8 @@
         <!-- 2. Record Title -->
         <div class="filter-group">
           <label class="filter-label" for="title-input">Record Name:</label>
-          <input type="text" id="title-input" class="input-text" placeholder="e.g. Discovery, Melophobia..." autocomplete="off">
+          <input type="text" id="title-input" class="input-text" placeholder="e.g. Discovery, Melophobia..."
+            autocomplete="off">
         </div>
 
         <!-- 3. Genre Selector -->
@@ -99,12 +106,12 @@
           <label class="filter-label">Year Range (Start - End):</label>
           <div class="year-range-inputs">
             <div class="year-input-wrap">
-              <span>From</span>
-              <input type="number" id="year-start-input" class="input-text" placeholder="1900">
+              <span>From </span>
+              <input type="number" id="year-start-input" class="input-text">
             </div>
             <div class="year-input-wrap">
-              <span>To</span>
-              <input type="number" id="year-end-input" class="input-text" placeholder="2026">
+              <span>To </span>
+              <input type="number" id="year-end-input" class="input-text">
             </div>
           </div>
         </div>
@@ -180,7 +187,8 @@
           <div class="empty-state" id="empty-state">
             <div class="empty-state-icon">💿</div>
             <h3>No Records Loaded Yet</h3>
-            <p>Drop your <strong>Albums List.xlsx</strong> file on the sidebar or click browse to start exploring your music library.</p>
+            <p>Drop your <strong>Albums List.xlsx</strong> file on the sidebar or click browse to start exploring your
+              music library.</p>
           </div>
         </div>
 
@@ -196,7 +204,6 @@
               <th data-sort="language">Lang</th>
               <th data-sort="year" style="text-align: right;">Year <span class="sort-icon">↕</span></th>
               <th data-sort="rating" style="text-align: right;">Rating <span class="sort-icon">↕</span></th>
-              <th data-sort="woke">Woke?</th>
             </tr>
           </thead>
           <tbody id="table-body"></tbody>
@@ -256,4 +263,5 @@
   <script src="js/music_library.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>

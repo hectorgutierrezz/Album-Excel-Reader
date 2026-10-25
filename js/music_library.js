@@ -13,7 +13,6 @@ class Record {
     language = '',
     year = 0,
     rating = 0.0,
-    woke = false,
     originalRating = null,
     artists = null
   }) {
@@ -24,7 +23,6 @@ class Record {
     this.language = language;
     this.year = year;
     this.rating = rating;
-    this.woke = woke;
     this.originalRating = originalRating;
     this.artists = artists || MusicLibraryJS.parseArtists(creator);
   }
@@ -45,7 +43,6 @@ class MusicLibraryJS {
     return parts.map(p => p.trim()).filter(Boolean);
   }
 
-
   static parseGenres(val) {
     if (!val) return [];
     const parts = String(val).split(/[,/]/);
@@ -56,12 +53,6 @@ class MusicLibraryJS {
     if (!val) return 'Unknown';
     const trimmed = String(val).trim();
     return trimmed || 'Unknown';
-  }
-
-  static parseWoke(val) {
-    if (!val) return false;
-    const s = String(val).trim().toLowerCase();
-    return ['yeh', 'yah', 'yes', 'true', '1', 'y'].includes(s);
   }
 
   static parseRating(val) {
@@ -169,8 +160,7 @@ class MusicLibraryJS {
       genres: -1,
       language: -1,
       year: -1,
-      mark: -1,
-      woke: -1
+      mark: -1
     };
 
     header.forEach((colName, idx) => {
@@ -191,8 +181,6 @@ class MusicLibraryJS {
         colMap.year = idx;
       } else if ((upper.includes('MARK') || upper.includes('RATING') || upper.includes('SCORE') || upper.includes('NOTA')) && colMap.mark === -1) {
         colMap.mark = idx;
-      } else if (upper.includes('WOKE') && colMap.woke === -1) {
-        colMap.woke = idx;
       }
     });
 
@@ -204,7 +192,6 @@ class MusicLibraryJS {
     const idxLang = colMap.language !== -1 ? colMap.language : 4;
     const idxYear = colMap.year !== -1 ? colMap.year : 5;
     const idxMark = colMap.mark !== -1 ? colMap.mark : 6;
-    const idxWoke = colMap.woke !== -1 ? colMap.woke : 7;
 
     const records = [];
     for (let r = 1; r < rows.length; r++) {
@@ -236,9 +223,6 @@ class MusicLibraryJS {
       const rawRating = idxMark < row.length ? row[idxMark] : null;
       const rating = MusicLibraryJS.parseRating(rawRating);
 
-      // Woke parsing
-      const woke = MusicLibraryJS.parseWoke(idxWoke < row.length ? row[idxWoke] : '');
-
       records.push(new Record({
         title,
         creator,
@@ -247,7 +231,6 @@ class MusicLibraryJS {
         language,
         year,
         rating,
-        woke,
         originalRating: rawRating !== null ? String(rawRating) : null
       }));
     }
@@ -440,8 +423,7 @@ class MusicLibraryJS {
       genres: truncate(r.genres.join(', ')),
       language: truncate(r.language),
       year: String(r.year || 0),
-      mark: (r.rating || 0).toFixed(3),
-      woke: r.woke ? 'Yeh' : 'Nah'
+      mark: (r.rating || 0).toFixed(3)
     }));
 
     // Calculate column widths
@@ -453,8 +435,7 @@ class MusicLibraryJS {
       { key: 'genres', header: 'GENRES', align: 'left' },
       { key: 'language', header: 'LANGUAGE', align: 'left' },
       { key: 'year', header: 'YEAR', align: 'right' },
-      { key: 'mark', header: 'MARK (/10)', align: 'right' },
-      { key: 'woke', header: 'WOKE?', align: 'left' }
+      { key: 'mark', header: 'MARK (/10)', align: 'right' }
     ];
 
     cols.forEach(col => {

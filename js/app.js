@@ -1,6 +1,6 @@
 /**
  * Music Library Browser - Main Web Application Script
- * Provides UI interaction, Excel file management, filters, and rendering.
+ * Provides UI interaction, automated Excel loading, filters, and rendering.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,14 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // DOM Elements
   const elements = {
-    fileInput: document.getElementById('file-input'),
-    dropzone: document.getElementById('file-dropzone'),
-    dropzoneText: document.getElementById('dropzone-text'),
-    fileStatusBadge: document.getElementById('file-status-badge'),
-    loadedFileName: document.getElementById('loaded-file-name'),
-    loadedFileCount: document.getElementById('loaded-file-count'),
-    btnChangeFile: document.getElementById('btn-change-file'),
-
     // Filter Inputs
     artistInput: document.getElementById('artist-input'),
     titleInput: document.getElementById('title-input'),
@@ -127,107 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   elements.btnViewMono.addEventListener('click', () => setViewMode('mono'));
   elements.btnViewTable.addEventListener('click', () => setViewMode('table'));
-
-  // --- IndexedDB Cache for Local File Persistence ---
-  const DB_NAME = 'AlbumExcelReaderDB';
-  const STORE_NAME = 'libraryCache';
-
-  function openDatabase() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME);
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async function cacheFileBuffer(fileName, buffer) {
-    try {
-      const db = await openDatabase();
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      store.put({ fileName, buffer, date: new Date().toISOString() }, 'currentFile');
-    } catch (err) {
-      console.warn('Could not cache file to IndexedDB:', err);
-    }
-  }
-
-  async function loadCachedFileBuffer() {
-    try {
-      const db = await openDatabase();
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      return new Promise((resolve) => {
-        const req = store.get('currentFile');
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve(null);
-      });
-    } catch (err) {
-      return null;
-    }
-  }
-
-  // --- File Processing ---
-  async function processArrayBuffer(buffer, fileName) {
-    try {
-      state.library.loadFromArrayBuffer(buffer, fileName);
-      await cacheFileBuffer(fileName, buffer);
-
-      // Update File Status Card
-      elements.fileStatusBadge.style.display = 'flex';
-      elements.loadedFileName.textContent = fileName;
-      elements.loadedFileCount.textContent = `${state.library.records.length} records`;
-
-      // Populate filter dropdowns based on loaded library
-      populateFilterOptions();
-
-      // Reset & Apply Filters
-      clearAllFilters();
-    } catch (err) {
-      console.error('Error processing Excel spreadsheet:', err);
-      alert(`Could not load Excel file: ${err.message}`);
-    }
-  }
-
-  function handleFileSelected(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      processArrayBuffer(e.target.result, file.name);
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  // File Picker & Dropzone listeners
-  elements.dropzone.addEventListener('click', () => elements.fileInput.click());
-  elements.btnChangeFile.addEventListener('click', () => elements.fileInput.click());
-  elements.fileInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelected(e.target.files[0]);
-    }
-  });
-
-  elements.dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    elements.dropzone.classList.add('dragover');
-  });
-
-  elements.dropzone.addEventListener('dragleave', () => {
-    elements.dropzone.classList.remove('dragover');
-  });
-
-  elements.dropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    elements.dropzone.classList.remove('dragover');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelected(e.dataTransfer.files[0]);
-    }
-  });
 
   // --- Initialize Options from Library ---
   function populateFilterOptions() {
@@ -380,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   elements.btnOpenArtistsModal.addEventListener('click', () => {
     if (state.library.records.length === 0) {
-      alert('Please load an Excel file first.');
       return;
     }
     renderArtistOptions();
@@ -520,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update Header Bar
     if (total === 0) {
-      elements.statsText.textContent = 'No library loaded';
+      elements.statsText.textContent = 'Loading library...';
     } else {
       elements.statsText.textContent = `Showing ${count} of ${total} records`;
     }
@@ -529,8 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.monoDisplay.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">💿</div>
-          <h3>No Records Loaded</h3>
-          <p>Select your <strong>Albums List.xlsx</strong> file on the sidebar to get started.</p>
+          <h3>Loading albums...</h3>
+          <p>Please wait while the music library is loaded from Albums List.xlsx</p>
         </div>
       `;
       elements.tableBody.innerHTML = '';
@@ -546,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       elements.monoDisplay.innerHTML = emptyHtml;
-      elements.tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">No records found matching filters.</td></tr>`;
+      elements.tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">No records found matching filters.</td></tr>`;
       return;
     }
 
@@ -574,11 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.monoDisplay.querySelectorAll('.monospace-row:not(.header-row)').forEach(rowEl => {
       rowEl.addEventListener('click', () => {
         const idx = parseInt(rowEl.dataset.idx, 10);
-        if (state.selectedRowIndex === idx) {
-          state.selectedRowIndex = null;
-        } else {
-          state.selectedRowIndex = idx;
-        }
+        state.selectedRowIndex = state.selectedRowIndex === idx ? null : idx;
         renderMonospaceView();
       });
     });
@@ -604,7 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${r.language}</td>
           <td style="text-align: right;">${r.year || '-'}</td>
           <td style="text-align: right;"><span class="rating-badge ${ratingClass}">${(r.rating || 0).toFixed(2)}</span></td>
-          <td>${r.woke ? 'Yeh' : 'Nah'}</td>
         </tr>
       `;
     }).join('');
@@ -645,30 +530,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- Auto-Load / Session Recovery ---
-  async function initAutoLoad() {
-    // 1. Check IndexedDB cache
-    const cached = await loadCachedFileBuffer();
-    if (cached && cached.buffer) {
-      console.log('Restoring library from local browser cache:', cached.fileName);
-      await processArrayBuffer(cached.buffer, cached.fileName);
-      return;
-    }
-
-    // 2. Fallback: If running on local server where Albums List.xlsx might be served
-    if (window.location.protocol.startsWith('http')) {
-      try {
-        const resp = await fetch('Albums List.xlsx');
-        if (resp.ok) {
-          const buf = await resp.arrayBuffer();
-          console.log('Auto-loaded local Albums List.xlsx');
-          await processArrayBuffer(buf, 'Albums List.xlsx');
-        }
-      } catch (err) {
-        // Normal behavior when running on GitHub Pages (static, file not served)
+  // --- Automatic Library Loading from Albums List.xlsx ---
+  async function loadLibrary() {
+    elements.statsText.textContent = 'Loading library...';
+    try {
+      const resp = await fetch(encodeURI('Albums List.xlsx'));
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}: Could not fetch Albums List.xlsx`);
       }
+      const buffer = await resp.arrayBuffer();
+      state.library.loadFromArrayBuffer(buffer, 'Albums List.xlsx');
+      populateFilterOptions();
+      clearAllFilters();
+    } catch (err) {
+      console.error('Error loading library:', err);
+      elements.statsText.textContent = 'Error loading library';
+      elements.monoDisplay.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⚠️</div>
+          <h3>Could not load Albums List.xlsx</h3>
+          <p>${err.message}</p>
+          <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
+            Please serve this site with a local server (e.g. <code>python3 -m http.server</code>) or visit via GitHub Pages.
+          </p>
+        </div>
+      `;
     }
   }
 
-  initAutoLoad();
+  loadLibrary();
 });

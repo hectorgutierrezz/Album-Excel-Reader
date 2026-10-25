@@ -17,7 +17,6 @@ class Record:
     language: str
     year: int
     rating: float
-    woke: bool
     original_rating: Optional[str] = None
     artists: Optional[List[str]] = None
 
@@ -34,7 +33,6 @@ def parse_artists(val) -> List[str]:
     val_str = str(val)
     parts = val_str.split(';')
     return [p.strip() for p in parts if p.strip()]
-
 
 def parse_rating(val) -> Optional[float]:
     """
@@ -68,15 +66,6 @@ def parse_rating(val) -> Optional[float]:
         except ValueError:
             pass
     return None
-
-def parse_woke(val) -> bool:
-    """Normalizes the WOKE? column values to booleans."""
-    if not val:
-        return False
-    val_str = str(val).strip().lower()
-    if val_str in ('yeh', 'yah', 'yes', 'true', '1', 'y'):
-        return True
-    return False
 
 def parse_genres(val) -> List[str]:
     """Splits genre string by commas or slashes and normalizes them into a list of strings."""
@@ -178,8 +167,7 @@ class MusicLibrary:
             "GENRES": -1,
             "LANGUAGE": -1,
             "YEAR": -1,
-            "MARK (/10)": -1,
-            "WOKE?": -1
+            "MARK (/10)": -1
         }
         for idx, col_name in enumerate(header):
             cleaned = col_name.upper().strip()
@@ -199,8 +187,6 @@ class MusicLibrary:
                 col_map["YEAR"] = idx
             elif any(k in cleaned for k in ("MARK", "RATING", "SCORE", "NOTA")) and col_map["MARK (/10)"] == -1:
                 col_map["MARK (/10)"] = idx
-            elif "WOKE" in cleaned and col_map["WOKE?"] == -1:
-                col_map["WOKE?"] = idx
             elif col_name in col_map and col_map[col_name] == -1:
                 col_map[col_name] = idx
 
@@ -212,7 +198,6 @@ class MusicLibrary:
         idx_lang = col_map["LANGUAGE"] if col_map["LANGUAGE"] != -1 else 4
         idx_year = col_map["YEAR"] if col_map["YEAR"] != -1 else 5
         idx_mark = col_map["MARK (/10)"] if col_map["MARK (/10)"] != -1 else 6
-        idx_woke = col_map["WOKE?"] if col_map["WOKE?"] != -1 else 7
 
         records = []
         for r_idx, row in enumerate(sheet.iter_rows(values_only=True), 1):
@@ -246,9 +231,7 @@ class MusicLibrary:
             rating = parse_rating(raw_rating)
             if rating is None:
                 rating = 0.0
-                
-            woke = parse_woke(row[idx_woke] if idx_woke < len(row) else "")
-            
+
             record = Record(
                 title=title,
                 creator=creator,
@@ -257,7 +240,6 @@ class MusicLibrary:
                 language=lang,
                 year=year,
                 rating=rating,
-                woke=woke,
                 original_rating=str(raw_rating) if raw_rating is not None else None
             )
             records.append(record)
@@ -413,8 +395,7 @@ class MusicLibrary:
                 "GENRES": ", ".join(r.genres),
                 "LANGUAGE": r.language,
                 "YEAR": r.year,
-                "MARK (/10)": r.rating,
-                "WOKE?": "Yeh" if r.woke else "Nah"
+                "MARK (/10)": r.rating
             })
         # Specify index as range to mimic the original dataframe
         return pd.DataFrame(data)
