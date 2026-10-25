@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎵 Music Library Browser</title>
+  <meta name="description" content="Check, search, and filter your personal album Excel spreadsheet with multi-artist support, interactive views, and offline in-browser processing.">
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- ============================================================
+         Sidebar Filters Column (mirrors readerUI.py)
+         ============================================================ -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-icon">🎵</span>
+          <div class="brand-text">
+            <h1>Music Library</h1>
+            <p>Excel Album Reader &amp; Filter</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Loader Card (Privacy-first client-side Excel) -->
+      <section class="file-loader-container">
+        <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;">
+        <div class="dropzone" id="file-dropzone" title="Drag & drop your Excel file here or click to browse">
+          <div class="dropzone-content">
+            <span class="dropzone-icon">📁</span>
+            <span id="dropzone-text">Drop <strong>Albums List.xlsx</strong> or <u>Browse</u></span>
+          </div>
+        </div>
+        <div class="file-status-badge" id="file-status-badge" style="display: none;">
+          <span class="name" id="loaded-file-name">Albums List.xlsx</span>
+          <div>
+            <span class="badge-tag" id="loaded-file-count">0 albums</span>
+            <button class="btn-file-change" id="btn-change-file" title="Select a different Excel file">Change</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scrollable Filter Controls -->
+      <div class="sidebar-filters-scroll" id="filters-container">
+        <!-- 1. Artist / Band -->
+        <div class="filter-group">
+          <label class="filter-label" for="artist-input">
+            <span>Artist/Band:</span>
+            <span class="filter-label-hint">multi-artist supported</span>
+          </label>
+          <input type="text" id="artist-input" class="input-text" placeholder="e.g. Daft Punk, Bruno Mars..." autocomplete="off">
+          <div class="artist-helper-bar">
+            <span>Semicolon-separated artists (;) matched individually</span>
+            <button type="button" class="btn-quick-artist" id="btn-open-artists-modal">Pick from list</button>
+          </div>
+        </div>
+
+        <!-- 2. Record Title -->
+        <div class="filter-group">
+          <label class="filter-label" for="title-input">Record Name:</label>
+          <input type="text" id="title-input" class="input-text" placeholder="e.g. Discovery, Melophobia..." autocomplete="off">
+        </div>
+
+        <!-- 3. Genre Selector -->
+        <div class="filter-group">
+          <label class="filter-label">Genre:</label>
+          <button type="button" class="btn-selector" id="btn-open-genre-modal">
+            <span class="selector-val" id="selected-genre-label">Any</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+        </div>
+
+        <!-- 4. Language Selector -->
+        <div class="filter-group">
+          <label class="filter-label">Language:</label>
+          <button type="button" class="btn-selector" id="btn-open-lang-modal">
+            <span class="selector-val" id="selected-lang-label">Any</span>
+            <span class="selector-arrow">▼</span>
+          </button>
+        </div>
+
+        <!-- 5. Record Type -->
+        <div class="filter-group">
+          <label class="filter-label" for="type-select">Record Type:</label>
+          <select id="type-select" class="select-input">
+            <option value="Any">Any</option>
+          </select>
+        </div>
+
+        <!-- 6. Year Range -->
+        <div class="filter-group">
+          <label class="filter-label">Year Range (Start - End):</label>
+          <div class="year-range-inputs">
+            <div class="year-input-wrap">
+              <span>From</span>
+              <input type="number" id="year-start-input" class="input-text" placeholder="1900">
+            </div>
+            <div class="year-input-wrap">
+              <span>To</span>
+              <input type="number" id="year-end-input" class="input-text" placeholder="2026">
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Rating -->
+        <div class="filter-group">
+          <label class="filter-label">Rating Criteria:</label>
+          <div class="rating-controls-wrap">
+            <select id="rating-op-select" class="rating-op-select">
+              <option value=">=">&gt;=</option>
+              <option value="<=">&lt;=</option>
+              <option value="==">==</option>
+            </select>
+            <div class="slider-container">
+              <input type="range" id="rating-slider" class="slider" min="0" max="10" step="0.5" value="0">
+            </div>
+          </div>
+          <div class="rating-feedback-label" id="rating-feedback-label">
+            Min Rating: 0.0 (Disabled)
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer Actions -->
+      <footer class="sidebar-footer">
+        <div class="action-buttons-grid">
+          <button type="button" class="btn-primary" id="btn-apply-filters">Apply</button>
+          <button type="button" class="btn-secondary" id="btn-clear-filters">Clear</button>
+        </div>
+        <div class="theme-selector-wrap">
+          <label for="theme-select">Theme Mode:</label>
+          <select id="theme-select" class="theme-select">
+            <option value="System">System</option>
+            <option value="Dark" selected>Dark</option>
+            <option value="Light">Light</option>
+          </select>
+        </div>
+      </footer>
+    </aside>
+
+    <!-- ============================================================
+         Main Content Area (Data Display & Controls)
+         ============================================================ -->
+    <main class="main-content">
+      <header class="main-header-bar">
+        <div class="stats-container">
+          <div class="stats-label" id="stats-label">
+            <span>📊</span>
+            <span id="stats-text">No library loaded</span>
+          </div>
+          <div class="active-filter-tags" id="active-filter-tags"></div>
+        </div>
+
+        <div class="header-controls">
+          <!-- View Mode Toggle -->
+          <div class="view-mode-toggle" title="Switch Display Style">
+            <button type="button" class="view-btn active" id="btn-view-mono">DataFrame (App)</button>
+            <button type="button" class="view-btn" id="btn-view-table">Data Table (Web)</button>
+          </div>
+
+          <!-- Zoom Font Controls -->
+          <div class="zoom-controls" title="Adjust text size">
+            <button type="button" class="btn-zoom" id="btn-zoom-out" aria-label="Zoom Out">-</button>
+            <button type="button" class="btn-zoom" id="btn-zoom-in" aria-label="Zoom In">+</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Results Display -->
+      <section class="results-container" id="results-container">
+        <!-- Monospace DataFrame Display (1:1 with readerUI.py CTkTextbox) -->
+        <div class="monospace-view" id="mono-display">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-state-icon">💿</div>
+            <h3>No Records Loaded Yet</h3>
+            <p>Drop your <strong>Albums List.xlsx</strong> file on the sidebar or click browse to start exploring your music library.</p>
+          </div>
+        </div>
+
+        <!-- Interactive HTML Table View -->
+        <table class="table-view" id="table-display" style="display: none;">
+          <thead>
+            <tr>
+              <th data-sort="index">#</th>
+              <th data-sort="title">Record <span class="sort-icon">↕</span></th>
+              <th data-sort="creator">Creator / Artists <span class="sort-icon">↕</span></th>
+              <th data-sort="recordType">Type <span class="sort-icon">↕</span></th>
+              <th data-sort="genres">Genres</th>
+              <th data-sort="language">Lang</th>
+              <th data-sort="year" style="text-align: right;">Year <span class="sort-icon">↕</span></th>
+              <th data-sort="rating" style="text-align: right;">Rating <span class="sort-icon">↕</span></th>
+              <th data-sort="woke">Woke?</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       Popup Modals (Genre, Language & Quick Artist Selectors)
+       ============================================================ -->
+
+  <!-- Genre Modal -->
+  <div class="modal-backdrop" id="genre-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Select Genre</h3>
+        <button type="button" class="btn-modal-close" id="btn-close-genre-modal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-search">
+        <input type="text" id="genre-search-input" class="input-text" placeholder="Search genres...">
+      </div>
+      <div class="modal-options-list" id="genre-options-list"></div>
+    </div>
+  </div>
+
+  <!-- Language Modal -->
+  <div class="modal-backdrop" id="lang-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Select Language</h3>
+        <button type="button" class="btn-modal-close" id="btn-close-lang-modal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-search">
+        <input type="text" id="lang-search-input" class="input-text" placeholder="Search languages...">
+      </div>
+      <div class="modal-options-list" id="lang-options-list"></div>
+    </div>
+  </div>
+
+  <!-- Quick Artist Modal -->
+  <div class="modal-backdrop" id="artist-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Select Artist</h3>
+        <button type="button" class="btn-modal-close" id="btn-close-artist-modal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-search">
+        <input type="text" id="artist-search-input" class="input-text" placeholder="Search unique artists...">
+      </div>
+      <div class="modal-options-list" id="artist-options-list"></div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="js/music_library.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

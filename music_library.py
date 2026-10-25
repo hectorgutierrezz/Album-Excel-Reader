@@ -19,6 +19,22 @@ class Record:
     rating: float
     woke: bool
     original_rating: Optional[str] = None
+    artists: Optional[List[str]] = None
+
+    def __post_init__(self):
+        if self.artists is None:
+            self.artists = parse_artists(self.creator)
+
+def parse_artists(val) -> List[str]:
+    """Splits creator string by semicolons (;) and normalizes them into a list of individual artist strings."""
+    if not val:
+        return []
+    if isinstance(val, (list, tuple)):
+        return [str(p).strip() for p in val if str(p).strip()]
+    val_str = str(val)
+    parts = val_str.split(';')
+    return [p.strip() for p in parts if p.strip()]
+
 
 def parse_rating(val) -> Optional[float]:
     """
@@ -32,6 +48,7 @@ def parse_rating(val) -> Optional[float]:
     - For 1900 year datetimes (Excel raw serial dates):
         The day is the integer rating, and time (hour/minute) is the decimal.
         Result: day + hour/24.0 + minute/1440.0
+    - For strings: supports both dot (9.5) and comma (9,5) decimal notations.
     """
     if val is None or val == "":
         return None
@@ -45,8 +62,9 @@ def parse_rating(val) -> Optional[float]:
             rating = val.day + (val.month / 10.0)
             return round(rating, 3)
     if isinstance(val, str):
+        val_clean = val.strip().replace(',', '.')
         try:
-            return float(val)
+            return float(val_clean)
         except ValueError:
             pass
     return None
@@ -78,10 +96,11 @@ def parse_rating_criteria(criteria: Union[str, float, int, dict]) -> dict:
     """
     Parses a rating criteria (e.g., '>=8.5', '<=6', '8', 9.5) into a standard dictionary:
     {'val': float, 'op': str, 'truncate': bool}
+    Supports comma decimal input (e.g., '>=8,5').
     """
     if isinstance(criteria, dict):
         return {
-            'val': float(criteria.get('val', 0.0)),
+            'val': float(str(criteria.get('val', 0.0)).replace(',', '.')),
             'op': str(criteria.get('op', '>=')),
             'truncate': bool(criteria.get('truncate', False))
         }
@@ -92,7 +111,7 @@ def parse_rating_criteria(criteria: Union[str, float, int, dict]) -> dict:
         else:
             return {'val': val, 'op': '>=', 'truncate': False}
 
-    criteria_str = str(criteria).strip()
+    criteria_str = str(criteria).strip().replace(',', '.')
     if not criteria_str:
         return {'val': 0.0, 'op': '>=', 'truncate': False}
 
@@ -163,7 +182,26 @@ class MusicLibrary:
             "WOKE?": -1
         }
         for idx, col_name in enumerate(header):
-            if col_name in col_map:
+            cleaned = col_name.upper().strip()
+            if not cleaned:
+                continue
+            if cleaned == "RECORDS" and col_map["RECORDS"] == -1:
+                col_map["RECORDS"] = idx
+            elif cleaned in ("CREATOR", "ARTIST", "ARTISTS", "ARTISTA", "ARTISTAS") and col_map["CREATOR"] == -1:
+                col_map["CREATOR"] = idx
+            elif cleaned == "TYPE" and col_map["TYPE"] == -1:
+                col_map["TYPE"] = idx
+            elif cleaned in ("GENRES", "GENRE") and col_map["GENRES"] == -1:
+                col_map["GENRES"] = idx
+            elif cleaned in ("LANGUAGE", "LANG") and col_map["LANGUAGE"] == -1:
+                col_map["LANGUAGE"] = idx
+            elif cleaned == "YEAR" and col_map["YEAR"] == -1:
+                col_map["YEAR"] = idx
+            elif any(k in cleaned for k in ("MARK", "RATING", "SCORE", "NOTA")) and col_map["MARK (/10)"] == -1:
+                col_map["MARK (/10)"] = idx
+            elif "WOKE" in cleaned and col_map["WOKE?"] == -1:
+                col_map["WOKE?"] = idx
+            elif col_name in col_map and col_map[col_name] == -1:
                 col_map[col_name] = idx
 
         # Fallback to standard index expectations if columns aren't found by name
@@ -239,14 +277,15 @@ class MusicLibrary:
         return [r for r in target if query in r.title.lower()]
 
     def search_by_artist(self, artist: str, exact: bool = False, records_list: Optional[List[Record]] = None) -> List[Record]:
-        """Searches records by creator/artist/band (case-insensitive, substring by default)."""
+        """Searches records by creator/artist/band (case-insensitive, substring by default).
+        Supports multi-artist fields separated by commas."""
         target = records_list if records_list is not None else self.records
         query = artist.strip().lower()
         if not query:
             return target
         if exact:
-            return [r for r in target if r.creator.lower() == query]
-        return [r for r in target if query in r.creator.lower()]
+            return [r for r in target if any(a.lower() == query for a in r.artists)]
+        return [r for r in target if any(query in a.lower() for a in r.artists)]
 
     def filter_by_year(self, year_range: Union[int, Tuple[int, int]], records_list: Optional[List[Record]] = None) -> List[Record]:
         """Filters records by a single year or a range of years (inclusive)."""
@@ -379,3 +418,32 @@ class MusicLibrary:
             })
         # Specify index as range to mimic the original dataframe
         return pd.DataFrame(data)
+
+    def get_unique_artists(self) -> List[str]:
+        """Returns sorted list of all unique individual artists."""
+        artists = set()
+        for r in self.records:
+            for a in r.artists:
+                if a:
+                    artists.add(a)
+        return sorted(list(artists), key=lambda s: s.lower())
+
+    def get_unique_genres(self) -> List[str]:
+        """Returns sorted list of all unique genres."""
+        genres = set()
+        for r in self.records:
+            for g in r.genres:
+                if g:
+                    genres.add(g)
+        return sorted(list(genres), key=lambda s: s.lower())
+
+    def get_unique_languages(self) -> List[str]:
+        """Returns sorted list of all unique languages."""
+        languages = {r.language for r in self.records if r.language}
+        return sorted(list(languages), key=lambda s: s.lower())
+
+    def get_unique_types(self) -> List[str]:
+        """Returns sorted list of all unique record types."""
+        types = {r.record_type for r in self.records if r.record_type}
+        return sorted(list(types), key=lambda s: s.lower())
+

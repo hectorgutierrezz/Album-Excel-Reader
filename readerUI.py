@@ -29,9 +29,20 @@ class MusicLibraryApp(ctk.CTk):
         # Load the library backend
         try:
             self.library = MusicLibrary('Albums List.xlsx')
-        except Exception as e:
-            # Fallback if the excel file isn't in the standard path
-            self.library = MusicLibrary()
+        except Exception:
+            try:
+                import tkinter.filedialog as fd
+                chosen = fd.askopenfilename(
+                    title="Select Albums Excel File",
+                    filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+                )
+                if chosen:
+                    self.library = MusicLibrary(chosen)
+                else:
+                    self.library = MusicLibrary()
+            except Exception:
+                self.library = MusicLibrary()
+
 
         # Window settings
         self.title("🎵 Music Library Browser")
