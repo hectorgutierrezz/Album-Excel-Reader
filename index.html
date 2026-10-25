@@ -34,24 +34,6 @@
         </div>
       </div>
 
-      <!-- File Loader Card (Privacy-first client-side Excel) -->
-      <section class="file-loader-container">
-        <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;">
-        <div class="dropzone" id="file-dropzone" title="Drag & drop your Excel file here or click to browse">
-          <div class="dropzone-content">
-            <span class="dropzone-icon">📁</span>
-            <span id="dropzone-text">Drop <strong>Albums List.xlsx</strong> or <u>Browse</u></span>
-          </div>
-        </div>
-        <div class="file-status-badge" id="file-status-badge" style="display: none;">
-          <span class="name" id="loaded-file-name">Albums List.xlsx</span>
-          <div>
-            <span class="badge-tag" id="loaded-file-count">0 albums</span>
-            <button class="btn-file-change" id="btn-change-file" title="Select a different Excel file">Change</button>
-          </div>
-        </div>
-      </section>
-
       <!-- Scrollable Filter Controls -->
       <div class="sidebar-filters-scroll" id="filters-container">
         <!-- 1. Artist / Band -->
@@ -186,9 +168,8 @@
         <div class="monospace-view" id="mono-display">
           <div class="empty-state" id="empty-state">
             <div class="empty-state-icon">💿</div>
-            <h3>No Records Loaded Yet</h3>
-            <p>Drop your <strong>Albums List.xlsx</strong> file on the sidebar or click browse to start exploring your
-              music library.</p>
+            <h3>Loading albums...</h3>
+            <p>Please wait while the music library is loaded from Albums List.xlsx</p>
           </div>
         </div>
 
