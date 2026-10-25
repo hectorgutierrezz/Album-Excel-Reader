@@ -19,10 +19,28 @@ class Record:
     rating: float
     original_rating: Optional[str] = None
     artists: Optional[List[str]] = None
+    languages: Optional[List[str]] = None
 
     def __post_init__(self):
         if self.artists is None:
             self.artists = parse_artists(self.creator)
+        if self.languages is None:
+            self.languages = parse_languages(self.language)
+
+def parse_languages(val) -> List[str]:
+    """Splits language string by commas, slashes, or semicolons and normalizes them into a list of strings."""
+    if not val:
+        return []
+    if isinstance(val, (list, tuple)):
+        return [re.sub(r'\.+$', '', str(p)).strip() for p in val if str(p).strip()]
+    val_str = str(val)
+    parts = re.split(r'[,/;]', val_str)
+    cleaned = []
+    for p in parts:
+        c = re.sub(r'\.+$', '', p).strip()
+        if c:
+            cleaned.append(c)
+    return cleaned
 
 def parse_artists(val) -> List[str]:
     """Splits creator string by semicolons (;) and normalizes them into a list of individual artist strings."""
@@ -311,12 +329,12 @@ class MusicLibrary:
             return [r for r in target if r.rating >= rating]
 
     def filter_by_language(self, language: str, records_list: Optional[List[Record]] = None) -> List[Record]:
-        """Filters records by main language (case-insensitive)."""
+        """Filters records where any language matches the query (case-insensitive)."""
         target = records_list if records_list is not None else self.records
         query = language.strip().lower()
-        if not query:
+        if not query or query == "any":
             return target
-        return [r for r in target if r.language.lower() == query]
+        return [r for r in target if any(query in l.lower() for l in r.languages)]
 
     def filter_by_type(self, type_name: str, records_list: Optional[List[Record]] = None) -> List[Record]:
         """Filters records by type (case-insensitive, e.g., 'Album', 'EP')."""
@@ -419,8 +437,12 @@ class MusicLibrary:
         return sorted(list(genres), key=lambda s: s.lower())
 
     def get_unique_languages(self) -> List[str]:
-        """Returns sorted list of all unique languages."""
-        languages = {r.language for r in self.records if r.language}
+        """Returns sorted list of all unique individual languages."""
+        languages = set()
+        for r in self.records:
+            for l in r.languages:
+                if l:
+                    languages.add(l)
         return sorted(list(languages), key=lambda s: s.lower())
 
     def get_unique_types(self) -> List[str]:

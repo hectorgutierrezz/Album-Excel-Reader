@@ -83,7 +83,7 @@ class MusicLibraryApp(ctk.CTk):
         # 3. Genre
         self.genre_label = ctk.CTkLabel(self.scroll_filters, text="Genre:", anchor="w")
         self.genre_label.grid(row=4, column=0, padx=10, pady=(10, 0), sticky="w")
-        unique_genres = sorted({genre for record in self.library.records for genre in record.genres if genre})
+        unique_genres = self.library.get_unique_genres()
         self.genre_options = ["Any"] + unique_genres
         self.genre_button = ctk.CTkButton(self.scroll_filters, text="Any", anchor="w", command=self.open_genre_selector)
         self.genre_button.grid(row=5, column=0, padx=10, pady=(0, 10), sticky="ew")
@@ -91,7 +91,7 @@ class MusicLibraryApp(ctk.CTk):
         # 4. Language
         self.lang_label = ctk.CTkLabel(self.scroll_filters, text="Language:", anchor="w")
         self.lang_label.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="w")
-        unique_languages = sorted({record.language for record in self.library.records if record.language})
+        unique_languages = self.library.get_unique_languages()
         self.lang_options = ["Any"] + unique_languages
         self.lang_button = ctk.CTkButton(self.scroll_filters, text="Any", anchor="w", command=self.open_language_selector)
         self.lang_button.grid(row=7, column=0, padx=10, pady=(0, 10), sticky="ew")

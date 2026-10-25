@@ -106,5 +106,49 @@ class TestMusicLibrary(unittest.TestCase):
         self.assertGreater(first.year, 1950)
         self.assertGreater(first.rating, 0.0)
 
+    def test_parse_and_filter_languages(self):
+        lib = MusicLibrary()
+        rec_multi = Record(
+            title="Multilingual Album",
+            creator="Artist A",
+            record_type="Album",
+            genres=["Pop"],
+            language="Spanish, Catalan, English",
+            year=2020,
+            rating=8.0
+        )
+        rec_slash = Record(
+            title="Slash Album",
+            creator="Artist B",
+            record_type="Album",
+            genres=["Rock"],
+            language="English/French/Italian...",
+            year=2021,
+            rating=7.5
+        )
+        lib.records = [rec_multi, rec_slash]
+
+        # Check parsed languages
+        self.assertEqual(rec_multi.languages, ["Spanish", "Catalan", "English"])
+        self.assertEqual(rec_slash.languages, ["English", "French", "Italian"])
+
+        # Check unique languages
+        unique = lib.get_unique_languages()
+        self.assertEqual(unique, ["Catalan", "English", "French", "Italian", "Spanish"])
+
+        # Filter by Catalan
+        catalan_matches = lib.filter_by_language("Catalan")
+        self.assertEqual(len(catalan_matches), 1)
+        self.assertEqual(catalan_matches[0], rec_multi)
+
+        # Filter by Italian
+        italian_matches = lib.filter_by_language("Italian")
+        self.assertEqual(len(italian_matches), 1)
+        self.assertEqual(italian_matches[0], rec_slash)
+
+        # Filter by English (both match)
+        english_matches = lib.filter_by_language("English")
+        self.assertEqual(len(english_matches), 2)
+
 if __name__ == '__main__':
     unittest.main()

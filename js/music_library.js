@@ -14,7 +14,8 @@ class Record {
     year = 0,
     rating = 0.0,
     originalRating = null,
-    artists = null
+    artists = null,
+    languages = null
   }) {
     this.title = title;
     this.creator = creator;
@@ -25,6 +26,7 @@ class Record {
     this.rating = rating;
     this.originalRating = originalRating;
     this.artists = artists || MusicLibraryJS.parseArtists(creator);
+    this.languages = languages || MusicLibraryJS.parseLanguages(language);
   }
 }
 
@@ -41,6 +43,13 @@ class MusicLibraryJS {
     if (Array.isArray(val)) return val.map(s => String(s).trim()).filter(Boolean);
     const parts = String(val).split(';');
     return parts.map(p => p.trim()).filter(Boolean);
+  }
+
+  static parseLanguages(val) {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.map(s => String(s).replace(/\.+$/, '').trim()).filter(Boolean);
+    const parts = String(val).split(/[,/;]/);
+    return parts.map(p => p.replace(/\.+$/, '').trim()).filter(Boolean);
   }
 
   static parseGenres(val) {
@@ -304,8 +313,8 @@ class MusicLibraryJS {
   filterByLanguage(language, recordsList = null) {
     const target = recordsList !== null ? recordsList : this.records;
     const query = String(language || '').trim().toLowerCase();
-    if (!query) return target;
-    return target.filter(r => r.language.toLowerCase() === query);
+    if (!query || query === 'any') return target;
+    return target.filter(r => (r.languages || []).some(l => l.toLowerCase().includes(query)));
   }
 
   filterByType(typeName, recordsList = null) {
@@ -383,7 +392,9 @@ class MusicLibraryJS {
   getUniqueLanguages() {
     const set = new Set();
     this.records.forEach(r => {
-      if (r.language) set.add(r.language);
+      (r.languages || []).forEach(l => {
+        if (l) set.add(l);
+      });
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   }
