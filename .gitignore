@@ -8,7 +8,7 @@ Thumbs.db
 venv/
 env/
 
-# Optional: keep personal Excel out of git
-# Albums List.xlsx
-# *.xlsx
-# *.xls
+# Spreadsheet stays on Google Drive (not in the repo)
+Albums List.xlsx
+*.xlsx
+*.xls

@@ -552,31 +552,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  async function fetchLocalExcel(path) {
-    const resp = await fetch(encodeURI(path) + '?t=' + Date.now(), { cache: 'no-cache' });
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status}: Could not fetch ${path}`);
-    }
-    return {
-      buffer: await resp.arrayBuffer(),
-      fileName: path,
-      source: 'local file'
-    };
-  }
-
   function showLoadError(err) {
     console.error('Error loading library:', err);
     elements.statsText.textContent = 'Error loading library';
-    const cfg = window.APP_CONFIG || {};
-    const hint = cfg.driveProxyUrl
-      ? 'Check <code>js/config.js</code> (driveProxyUrl) and that the Apps Script deployment is active.'
-      : 'Set <code>driveProxyUrl</code> in <code>js/config.js</code> (see README), or serve a local <code>Albums List.xlsx</code>.';
     elements.monoDisplay.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
         <h3>Could not load album library</h3>
         <p>${err.message}</p>
-        <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">${hint}</p>
+        <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
+          Check <code>driveProxyUrl</code> in <code>js/config.js</code> and that the Apps Script deployment is active (see README).
+        </p>
       </div>
     `;
   }
@@ -585,30 +571,19 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.statsText.textContent = 'Loading library...';
     const cfg = window.APP_CONFIG || {};
     const proxyUrl = (cfg.driveProxyUrl || '').trim();
-    const localPath = cfg.localExcelPath || 'Albums List.xlsx';
+
+    if (!proxyUrl) {
+      showLoadError(new Error('driveProxyUrl is empty in js/config.js'));
+      return;
+    }
 
     try {
-      if (proxyUrl) {
-        elements.statsText.textContent = 'Downloading from Google Drive...';
-        try {
-          const loaded = await fetchFromDriveProxy(proxyUrl);
-          state.library.loadFromRows(loaded.rows, loaded.fileName);
-          console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
-        } catch (driveErr) {
-          console.warn('Drive proxy failed, trying local fallback:', driveErr);
-          elements.statsText.textContent = 'Drive unavailable — trying local file...';
-          const loaded = await fetchLocalExcel(localPath);
-          state.library.loadFromArrayBuffer(loaded.buffer, loaded.fileName);
-          console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
-        }
-      } else {
-        const loaded = await fetchLocalExcel(localPath);
-        state.library.loadFromArrayBuffer(loaded.buffer, loaded.fileName);
-        console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
-      }
-
+      elements.statsText.textContent = 'Downloading from Google Drive...';
+      const loaded = await fetchFromDriveProxy(proxyUrl);
+      state.library.loadFromRows(loaded.rows, loaded.fileName);
       populateFilterOptions();
       clearAllFilters();
+      console.info(`Library loaded from ${loaded.source}: ${loaded.fileName}`);
     } catch (err) {
       showLoadError(err);
     }

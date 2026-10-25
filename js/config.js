@@ -1,17 +1,14 @@
 /**
- * Site configuration — edit this file after deploying the Google Apps Script proxy.
+ * Site configuration — edit after deploying the Google Apps Script proxy.
  *
- * Why a proxy? Browsers cannot fetch Google Drive files directly (CORS).
- * A tiny Apps Script web app reads your private Excel and returns it as JSON+base64.
- * Setup steps are in README.md and drive-proxy/Code.gs.
+ * Browsers cannot fetch Google Drive/Sheets directly (CORS).
+ * Apps Script reads your sheet and returns the rows as JSON.
+ * Setup: README.md and drive-proxy/Code.gs
  */
 window.APP_CONFIG = {
   /**
    * URL of the deployed Apps Script web app (.../exec).
-   * Leave empty to load the local "Albums List.xlsx" (useful for offline/dev).
+   * Required — the album data lives on Google Sheets, not in this repo.
    */
-  driveProxyUrl: 'https://script.google.com/macros/s/AKfycbwt36nmu9uezVs75nJEGAw9h8vAbvpeqsVBIBLyCjVSHTk2zRYdRM8m38kxA0qF417a/exec',
-
-  /** Local fallback when driveProxyUrl is empty or the proxy fails. */
-  localExcelPath: 'Albums List.xlsx'
+  driveProxyUrl: 'https://script.google.com/macros/s/AKfycbwt36nmu9uezVs75nJEGAw9h8vAbvpeqsVBIBLyCjVSHTk2zRYdRM8m38kxA0qF417a/exec'
 };

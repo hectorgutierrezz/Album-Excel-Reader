@@ -15,7 +15,7 @@ Abre el enlace de GitHub Pages. Si configuraste el proxy de Drive (abajo), la bi
 ```bash
 python3 -m http.server 8080
 ```
-Luego abre `http://localhost:8080`. Sin `driveProxyUrl`, carga el fichero local `Albums List.xlsx`.
+Luego abre `http://localhost:8080`. Los datos salen de Google Sheets vía el proxy (no hay Excel en el repo).
 
 ---
 
@@ -47,7 +47,7 @@ driveProxyUrl: 'https://script.google.com/macros/s/XXXX/exec',
 ```
 Haz commit y push para que GitHub Pages lo use.
 
-Cada visita carga los datos actuales de la Sheet. Si el proxy falla, la web intenta el `Albums List.xlsx` local como respaldo.
+Cada visita carga los datos actuales de la Sheet (no hace falta subir ningún Excel al repositorio).
 
 ---
 
