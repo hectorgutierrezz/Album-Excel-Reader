@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="empty-state">
           <div class="empty-state-icon">💿</div>
           <h3>Loading albums...</h3>
-            <p>Please wait while the music library is loaded from Google Drive</p>
+            <p>Please wait while the music library is being loaded</p>
         </div>
       `;
       elements.tableBody.innerHTML = '';
